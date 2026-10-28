@@ -27,6 +27,7 @@ jobs:
             if ! xcrun -sdk iphoneos clang -dynamiclib -arch arm64 \
                 -miphoneos-version-min=14.0 -fobjc-arc \
                 -framework Foundation -framework UIKit \
+                -framework CoreGraphics -framework QuartzCore \
                 -framework SystemConfiguration -framework Network \
                 "$f" fishhook.c -o "$name.dylib" > build.log 2>&1; then
               fail=1
