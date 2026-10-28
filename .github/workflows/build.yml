@@ -1,0 +1,37 @@
+name: Build dylib
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Fetch fishhook
+        run: |
+          curl -fsSL -O https://raw.githubusercontent.com/facebook/fishhook/main/fishhook.c
+          curl -fsSL -O https://raw.githubusercontent.com/facebook/fishhook/main/fishhook.h
+
+      - name: Compile every .m into a dylib
+        run: |
+          for f in *.m; do
+            name="${f%.m}"
+            echo "== Building $name"
+            xcrun -sdk iphoneos clang -dynamiclib -arch arm64 \
+              -miphoneos-version-min=14.0 -fobjc-arc \
+              -framework Foundation -framework UIKit \
+              -framework SystemConfiguration -framework Network \
+              "$f" fishhook.c -o "$name.dylib"
+            codesign -f -s - "$name.dylib"
+          done
+
+      - name: Upload dylib artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: tweaks
+          path: "*.dylib"
