@@ -19,16 +19,32 @@ jobs:
 
       - name: Compile every .m into a dylib
         run: |
+          fail=0
+          ls -la
           for f in *.m; do
             name="${f%.m}"
             echo "== Building $name"
-            xcrun -sdk iphoneos clang -dynamiclib -arch arm64 \
-              -miphoneos-version-min=14.0 -fobjc-arc \
-              -framework Foundation -framework UIKit \
-              -framework SystemConfiguration -framework Network \
-              "$f" fishhook.c -o "$name.dylib"
-            codesign -f -s - "$name.dylib"
+            if ! xcrun -sdk iphoneos clang -dynamiclib -arch arm64 \
+                -miphoneos-version-min=14.0 -fobjc-arc \
+                -framework Foundation -framework UIKit \
+                -framework SystemConfiguration -framework Network \
+                "$f" fishhook.c -o "$name.dylib" > build.log 2>&1; then
+              fail=1
+              cat build.log
+              {
+                echo "### Ошибка сборки: $f"
+                echo '```'
+                head -n 60 build.log
+                echo '```'
+              } >> "$GITHUB_STEP_SUMMARY"
+              grep -m 5 'error' build.log | while IFS= read -r line; do
+                echo "::error::$line"
+              done
+            else
+              codesign -f -s - "$name.dylib"
+            fi
           done
+          exit $fail
 
       - name: Upload dylib artifacts
         uses: actions/upload-artifact@v4
