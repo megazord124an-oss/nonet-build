@@ -12,9 +12,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Fetch fishhook
+        run: |
+          curl -fsSL -O https://raw.githubusercontent.com/facebook/fishhook/main/fishhook.c
+          curl -fsSL -O https://raw.githubusercontent.com/facebook/fishhook/main/fishhook.h
+
       - name: Compile for iOS arm64
         run: |
-          xcrun -sdk iphoneos clang -shared -arch arm64 NoNet.c -o NoNet.dylib
+          xcrun -sdk iphoneos clang -dynamiclib -arch arm64 \
+            -miphoneos-version-min=14.0 -fobjc-arc \
+            -framework Foundation -framework SystemConfiguration -framework Network \
+            NoNet.m fishhook.c -o NoNet.dylib
+          codesign -f -s - NoNet.dylib
 
       - name: Upload dylib artifact
         uses: actions/upload-artifact@v4
