@@ -1,0 +1,23 @@
+name: Build dylib
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Compile for iOS arm64
+        run: |
+          xcrun -sdk iphoneos clang -shared -arch arm64 NoNet.c -o NoNet.dylib
+
+      - name: Upload dylib artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NoNet-dylib
+          path: NoNet.dylib
