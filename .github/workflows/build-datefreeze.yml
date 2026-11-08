@@ -1,0 +1,40 @@
+name: Build DateFreeze iOS dylib
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "DateFreeze.m"
+      - ".github/workflows/build-datefreeze.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Build arm64 dylib
+        run: |
+          xcrun --sdk iphoneos clang \
+            -arch arm64 \
+            -dynamiclib \
+            -fobjc-arc \
+            -framework Foundation \
+            -install_name @rpath/DateFreeze.dylib \
+            DateFreeze.m \
+            -o DateFreeze.dylib
+
+          file DateFreeze.dylib
+          xcrun --sdk iphoneos otool -hv DateFreeze.dylib
+
+      - name: Upload dylib artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DateFreeze-ios-arm64
+          path: DateFreeze.dylib
+          if-no-files-found: error
+          retention-days: 14
